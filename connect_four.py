@@ -1,6 +1,7 @@
 import pygame
 import sys
 import math
+import pprint
 
 width = 640
 height = 400
@@ -10,14 +11,19 @@ RED = 255,0,0
 BLUE = 0,0,255
 WHITE = 255, 255, 255
 
+RADIUS = height/20
+
+PLAYER_TO_COLOR = {1: RED, 2: BLUE}
+
 screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
 class Piece:
-    def __init__(self, screen, color, center_pos, radius=height/20):
+    def __init__(self, screen, player, pos, radius=height/20):
         self.screen = screen
-        self.color = color
-        self.pos = center_pos
+        self.player = player
+        self.pos = pos
+        self.color = PLAYER_TO_COLOR[player]
         self.radius = radius
         self.is_grabbed = False
         self.offset = (0,0)
@@ -53,7 +59,7 @@ class Board:
         self.top_disp_offset = self.box_size
 
 
-    def draw(self):
+    def draw_board(self):
         for row_num in range(self.rows+1):
             row_start = (self.left_disp_offset, self.top_disp_offset + (self.box_size *  row_num))
             row_end = (self.left_disp_offset + (self.box_size * self.cols), self.top_disp_offset + (self.box_size *  row_num))
@@ -63,18 +69,49 @@ class Board:
             col_end = (self.left_disp_offset + (self.box_size * col_num), self.top_disp_offset + (self.box_size * self.rows))
             pygame.draw.line(self.screen, WHITE, col_start, col_end)
 
-    def translate_mouse_pos(self, mouse_pos):
-        mx, my = mouse_pos
-        return mx - self.left_disp_offset, my - self.top_disp_offset
+    def remove_offset(self, pos):
+        x,y = pos
+        return (x - self.left_disp_offset, y - self.top_disp_offset)
 
-    def mouse_over_col(self, mouse_pos):
-        mx, my = self.translate_mouse_pos(mouse_pos)
-        col = mx / self.box_size
+    def add_offset(self, pos):
+        x,y = pos
+        return (x + self.left_disp_offset, y + self.top_disp_offset)
+
+    def get_col(self, pos):
+        x, y = self.remove_offset(pos)
+        col = x / self.box_size
         if col in range(self.cols):
-            print "col:", col
+            #print "col:", col
             return col
         else:
             return None
+
+    def get_indices(self, pos):
+        col = self.get_col(pos)
+        if col != None:
+            for i, row in enumerate(reversed(self.grid)):
+                if row[col] == 0:
+                    return (col,(self.rows-i-1))
+        else:
+            return None
+
+    def get_slot_pos_from_indices(self, indices):
+        x,y = indices
+        board_x_pos = int(self.box_size * (x + 0.5))
+        board_y_pos = int(self.box_size * (y + 0.5))
+        return self.add_offset((board_x_pos, board_y_pos))
+
+    def draw(self):
+        self.draw_board()
+        for i, row in enumerate(self.grid):
+            for j, col in enumerate(row):
+                if col != 0:
+                    if col == 1:
+                        color = RED
+                    if col == 2:
+                        color = BLUE
+                    pos = self.get_slot_pos_from_indices((j,i))
+                    pygame.draw.circle(self.screen, color, pos, RADIUS)
 
 
 def get_distance(mouse, piece):
@@ -100,8 +137,8 @@ def set_all_ungrabbed(pieces):
         piece.offset = (0,0)
 
 b = Board(screen)
-red_piece = Piece(screen, RED, (width/2, height/2))
-blue_piece = Piece(screen, BLUE, (100,100))
+red_piece = Piece(screen, 1, (width/2, height/2))
+blue_piece = Piece(screen, 2, (100,100))
 pieces = [red_piece, blue_piece]
 grabbed_list = []
 
@@ -125,9 +162,21 @@ while True:
             for piece in grabbed_list:
                 piece.move(event.pos)
         if event.type == pygame.MOUSEBUTTONUP:
-            b.mouse_over_col(event.pos)
-            set_all_ungrabbed(pieces)
+            #b.over_col(event.pos)
+            for piece in get_grabbed(pieces):
+                indices = b.get_indices(piece.pos)
+                if indices:
+                    print "Grid pos: {}".format(indices)
+                    slot_pos = b.get_slot_pos_from_indices(indices)
+                    print "Pixel pos: {}".format(slot_pos)
 
+                    x,y = indices
+                    print piece.color
+                    b.grid[y][x] = piece.player
+
+                    piece.pos = slot_pos
+                    pprint.pprint(b.grid)
+            set_all_ungrabbed(pieces)
 
 
     pygame.display.flip()
