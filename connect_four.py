@@ -128,9 +128,6 @@ def get_distance(mouse, piece):
 
     return math.sqrt(distance2)
 
-def get_grabbed(pieces):
-    return [piece for piece in pieces if piece.is_grabbed]
-
 def set_all_ungrabbed(pieces):
     for piece in pieces:
         piece.is_grabbed = False
@@ -199,63 +196,55 @@ def is_diag_win(grid):
                 if winner:
                     return winner
 
-def determine_win(grid):
+def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
 
 
 b = Board(screen)
 red_piece = Piece(screen, 1, (int(width*0.75), height/2))
-#blue_piece = Piece(screen, 2, (100,100))
-pieces = [red_piece]#, blue_piece]
-grabbed_list = []
+piece = red_piece
 
 while True:
     screen.fill(BLACK)
     b.draw()
-
-    for piece in pieces:
+    if piece:
         piece.draw()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            for piece in pieces:
+        if piece:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 piece.is_grabbed = piece.is_mouse_over(event)
                 if piece.is_grabbed:
                     piece.set_offset(event.pos)
-        if event.type == pygame.MOUSEMOTION and any([piece.is_grabbed for piece in pieces]):
-            grabbed_list = get_grabbed(pieces)
-            for piece in grabbed_list:
-                piece.move(event.pos)
-        if event.type == pygame.MOUSEBUTTONUP:
-            #b.over_col(event.pos)
-            for i, piece in enumerate(get_grabbed(pieces)):
-                indices = b.get_indices(piece.pos)
-                if indices:
-                    print "Grid pos: {}".format(indices)
-                    slot_pos = b.get_slot_pos_from_indices(indices)
-                    print "Pixel pos: {}".format(slot_pos)
+            if event.type == pygame.MOUSEMOTION and piece.is_grabbed:
+                if piece.is_grabbed:
+                    piece.move(event.pos)
+            if event.type == pygame.MOUSEBUTTONUP:
+                if piece.is_grabbed:
+                    indices = b.get_indices(piece.pos)
+                    if indices:
+                        print "Grid pos: {}".format(indices)
+                        slot_pos = b.get_slot_pos_from_indices(indices)
+                        print "Pixel pos: {}".format(slot_pos)
 
-                    x,y = indices
-                    print piece.color
-                    b.grid[y][x] = piece.player
+                        x,y = indices
+                        print piece.color
+                        b.grid[y][x] = piece.player
 
-                    piece.pos = slot_pos
+                        piece.pos = slot_pos
 
-                    next_player = (piece.player)%2 + 1
+                        next_player = (piece.player)%2 + 1
 
-                    new_piece = Piece(screen, next_player, (int(width*0.75), height/2))
-                    del pieces[i]
-                    pieces.append(new_piece)
+                        winner = determine_winner(b.grid)
+                        if winner != None:
+                           print "Player %s just won the game!!" % (winner)
+                           piece = None
+                        else:
+                            piece = Piece(screen, next_player, (int(width*0.75), height/2))
 
-                    winner = determine_win(b.grid)
-                    if winner != None:
-                       print "Player %s just won the game!!" % (winner)
-
-                    pprint.pprint(b.grid)
-
-            set_all_ungrabbed(pieces)
+                        pprint.pprint(b.grid)
 
 
     pygame.display.flip()
