@@ -136,10 +136,77 @@ def set_all_ungrabbed(pieces):
         piece.is_grabbed = False
         piece.offset = (0,0)
 
+def is_row_win(grid):
+    for row in reversed(grid):
+        streak = 0
+        if row[3] != 0:
+            is_winner = row[3]
+            for column in row:
+                if column == is_winner:
+                    streak += 1
+                else:
+                    streak = 0
+                if streak >= 4:
+                    return is_winner
+
+def is_col_win(grid):
+    row3 = grid[2]
+    row4 = grid[3]
+    for i in range(7):
+        #check to see if row3 and 4 have a match first
+        if row3[i] != 0 and row3[i] == row4[i]:
+            is_winner = row3[i]
+            streak = 0
+            for row in reversed(grid):
+                if row[i] == is_winner:
+                    streak += 1
+                else:
+                    streak = 0
+                if streak >=4:
+                    return is_winner
+
+def check_diagonal(player, index, grid):
+    f_index = index
+    b_index = index
+    f_streak = 1
+    b_streak = 1
+
+    for row in reversed(grid):
+        f_index += 1
+        b_index -= 1
+        if f_index <=  6 and row[f_index] == player:
+            f_streak += 1
+        else:
+            f_streak = 0
+        if b_index >= 0 and row[b_index] == player:
+            b_streak += 1
+        else:
+            b_streak = 0
+        if f_streak == 0 and b_streak == 0:
+            return None
+    return player
+
+
+    return None
+
+def is_diag_win(grid):
+    for i, row in enumerate(reversed(grid[3:])):
+        for j, column in enumerate(row):
+            if column != 0:
+                top = 2 - i
+                bottom = 5 - i
+                winner = check_diagonal(column, j,  grid[top:bottom])
+                if winner:
+                    return winner
+
+def determine_win(grid):
+    return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
+
+
 b = Board(screen)
-red_piece = Piece(screen, 1, (width/2, height/2))
-blue_piece = Piece(screen, 2, (100,100))
-pieces = [red_piece, blue_piece]
+red_piece = Piece(screen, 1, (int(width*0.75), height/2))
+#blue_piece = Piece(screen, 2, (100,100))
+pieces = [red_piece]#, blue_piece]
 grabbed_list = []
 
 while True:
@@ -163,7 +230,7 @@ while True:
                 piece.move(event.pos)
         if event.type == pygame.MOUSEBUTTONUP:
             #b.over_col(event.pos)
-            for piece in get_grabbed(pieces):
+            for i, piece in enumerate(get_grabbed(pieces)):
                 indices = b.get_indices(piece.pos)
                 if indices:
                     print "Grid pos: {}".format(indices)
@@ -175,7 +242,19 @@ while True:
                     b.grid[y][x] = piece.player
 
                     piece.pos = slot_pos
+
+                    next_player = (piece.player)%2 + 1
+
+                    new_piece = Piece(screen, next_player, (int(width*0.75), height/2))
+                    del pieces[i]
+                    pieces.append(new_piece)
+
+                    winner = determine_win(b.grid)
+                    if winner != None:
+                       print "Player %s just won the game!!" % (winner)
+
                     pprint.pprint(b.grid)
+
             set_all_ungrabbed(pieces)
 
 
