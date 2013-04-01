@@ -2,6 +2,7 @@ import pygame
 import sys
 import math
 import pprint
+import random
 
 width = 640
 height = 400
@@ -87,13 +88,15 @@ class Board:
             return None
 
     def get_indices(self, pos):
+        #get the column that the mouse is over
         col = self.get_col(pos)
+
+        #column is an integer between 0 and self.cols
         if col != None:
-            for i, row in enumerate(reversed(self.grid)):
-                if row[col] == 0:
-                    return (col,(self.rows-i-1))
-        else:
-            return None
+            row = get_row(self.grid, col)
+            if row:
+                return (col, row)
+        return None
 
     def get_slot_pos_from_indices(self, indices):
         x,y = indices
@@ -112,6 +115,14 @@ class Board:
                         color = BLUE
                     pos = self.get_slot_pos_from_indices((j,i))
                     pygame.draw.circle(self.screen, color, pos, RADIUS)
+
+def get_row(grid, col):
+    for i, row in enumerate(reversed(grid)):
+    #if it's over a column, figure out the bottom
+    #slot in the grid to put the piece
+        if row[col] == 0:
+            return 6-i-1
+    return None
 
 
 def get_distance(mouse, piece):
@@ -144,7 +155,9 @@ def is_row_win(grid):
                 else:
                     streak = 0
                 if streak >= 4:
+                    print "row winner"
                     return is_winner
+    return None
 
 def is_col_win(grid):
     row3 = grid[2]
@@ -160,7 +173,9 @@ def is_col_win(grid):
                 else:
                     streak = 0
                 if streak >=4:
+                    print "column winner"
                     return is_winner
+    return None
 
 def check_diagonal(player, index, grid):
     f_index = index
@@ -181,10 +196,10 @@ def check_diagonal(player, index, grid):
             b_streak = 0
         if f_streak == 0 and b_streak == 0:
             return None
-    return player
-
-
-    return None
+    if f_streak == 4 or b_streak == 4:
+        return player
+    else:
+        return None
 
 def is_diag_win(grid):
     for i, row in enumerate(reversed(grid[3:])):
@@ -194,7 +209,9 @@ def is_diag_win(grid):
                 bottom = 5 - i
                 winner = check_diagonal(column, j,  grid[top:bottom])
                 if winner:
+                    print "diagonal winner"
                     return winner
+    return None
 
 def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
@@ -203,6 +220,22 @@ def determine_winner(grid):
 b = Board(screen)
 red_piece = Piece(screen, 1, (int(width*0.75), height/2))
 piece = red_piece
+added_to_grid = False
+auto = False
+'''
+grid = [[0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 2, 0],
+        [2, 0, 1, 0, 2, 1, 0],
+        [1, 0, 2, 2, 0, 2, 0],
+        [1, 0, 2, 1, 1, 1, 2]]
+
+print determine_winner(grid)
+
+'''
+
+print "Welcome to Connect Four!"
+print "Please move a piece, select keys 1-7, or select 'a' to automate game"
 
 while True:
     screen.fill(BLACK)
@@ -211,40 +244,84 @@ while True:
         piece.draw()
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_x):
             sys.exit()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+        #player wants to reset game
+            b = Board(screen) #create a new board
+            red_piece = Piece(screen, 1, (int(width*0.75), height/2)) #add a piece to board
+            piece = red_piece
+            added_to_grid = False
+            auto = False
+
         if piece:
             if event.type == pygame.MOUSEBUTTONDOWN:
+            #if mouse is over the piece, set piece as grabbed
+            #and record the offset as the distance from mouse to center
                 piece.is_grabbed = piece.is_mouse_over(event)
                 if piece.is_grabbed:
                     piece.set_offset(event.pos)
+
+
             if event.type == pygame.MOUSEMOTION and piece.is_grabbed:
+            #if you move while the piece is grabbed, move the piece
+            #with you.
                 if piece.is_grabbed:
                     piece.move(event.pos)
+
             if event.type == pygame.MOUSEBUTTONUP:
+            #if you unclick piece over the board, get "indices" of board
+            #position to put piece
                 if piece.is_grabbed:
                     indices = b.get_indices(piece.pos)
                     if indices:
-                        print "Grid pos: {}".format(indices)
                         slot_pos = b.get_slot_pos_from_indices(indices)
-                        print "Pixel pos: {}".format(slot_pos)
 
                         x,y = indices
-                        print piece.color
                         b.grid[y][x] = piece.player
+                        added_to_grid = True
 
-                        piece.pos = slot_pos
 
-                        next_player = (piece.player)%2 + 1
+            if event.type == pygame.KEYDOWN:
+                #see if a slot was selected by user (key 1-7)
+                slot = event.key - 49#if you press 1-7 event.key = 49-55
+                if slot <= 6:
+                    row = get_row(b.grid, slot)
+                    if row:
+                        b.grid[row][slot] = piece.player
+                        added_to_grid = True
 
-                        winner = determine_winner(b.grid)
-                        if winner != None:
-                           print "Player %s just won the game!!" % (winner)
-                           piece = None
-                        else:
-                            piece = Piece(screen, next_player, (int(width*0.75), height/2))
+                #see if user selected "a" for automatic
+                elif event.key == pygame.K_a:
+                    auto = True
 
-                        pprint.pprint(b.grid)
+    if auto:
+        slot = random.randint(0,6)
+        row = get_row(b.grid, slot)
+        if row:
+            b.grid[row][slot] = piece.player
+            added_to_grid = True
+
+
+    if added_to_grid:
+        #alternate player 1 and 2
+        next_player = (piece.player)%2 + 1
+
+        added_to_grid = False
+
+        winner = determine_winner(b.grid)
+        if winner:
+            print "********************"
+            print "Player %s WINS!!" % (winner)
+            print "********************"
+            piece = None
+            auto = False
+            pprint.pprint(b.grid)
+            print "Please press 'r' to restart game"
+        else:
+            piece = Piece(screen, next_player, (int(width*0.75), height/2))
+
+            #pprint.pprint(b.grid)
 
 
     pygame.display.flip()
