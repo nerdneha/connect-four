@@ -16,8 +16,10 @@ RADIUS = height/20
 
 PLAYER_TO_COLOR = {1: RED, 2: BLUE}
 
-screen = pygame.display.set_mode((width, height))
-clock = pygame.time.Clock()
+ROWS = 6
+COLUMNS = 7
+
+pygame.font.init()
 
 class Piece:
     def __init__(self, screen, player, pos, radius=height/20):
@@ -93,8 +95,8 @@ class Board:
 
         #column is an integer between 0 and self.cols
         if col != None:
-            row = get_row(self.grid, col)
-            if row:
+            row = get_row(self.grid, col, ROWS)
+            if row != None:
                 return (col, row)
         return None
 
@@ -116,14 +118,18 @@ class Board:
                     pos = self.get_slot_pos_from_indices((j,i))
                     pygame.draw.circle(self.screen, color, pos, RADIUS)
 
-def get_row(grid, col):
+def get_row(grid, col, rows):
     for i, row in enumerate(reversed(grid)):
     #if it's over a column, figure out the bottom
     #slot in the grid to put the piece
         if row[col] == 0:
-            return 6-i-1
+            return rows-i-1
     return None
 
+def get_random_spot(grid):
+    slot = random.randint(0,6)
+    row = get_row(grid, slot, ROWS)
+    return slot, row
 
 def get_distance(mouse, piece):
     mx, my = mouse
@@ -138,11 +144,6 @@ def get_distance(mouse, piece):
     distance2 = dx2 + dy2
 
     return math.sqrt(distance2)
-
-def set_all_ungrabbed(pieces):
-    for piece in pieces:
-        piece.is_grabbed = False
-        piece.offset = (0,0)
 
 def is_row_win(grid):
     for row in reversed(grid):
@@ -216,113 +217,159 @@ def is_diag_win(grid):
 def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
 
-
-b = Board(screen)
-red_piece = Piece(screen, 1, (int(width*0.75), height/2))
-piece = red_piece
-added_to_grid = False
-auto = False
-'''
-grid = [[0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 2, 0],
-        [2, 0, 1, 0, 2, 1, 0],
-        [1, 0, 2, 2, 0, 2, 0],
-        [1, 0, 2, 1, 1, 1, 2]]
-
-print determine_winner(grid)
-
-'''
-
-print "Welcome to Connect Four!"
-print "Please move a piece, select keys 1-7, or select 'a' to automate game"
-
-while True:
+def setup_loop(screen):
     screen.fill(BLACK)
-    b.draw()
-    if piece:
-        piece.draw()
+    my_font = pygame.font.SysFont("monospace", 20)
+    label = my_font.render("Please press 'a' to watch an automatic game, 'c' to play the computer,\n or 'p' to play a two-player game", 1, (255, 255, 255))
+    screen.blit(label, (25,height/2))
+    pygame.display.flip()
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_x):
-            sys.exit()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-        #player wants to reset game
-            b = Board(screen) #create a new board
-            red_piece = Piece(screen, 1, (int(width*0.75), height/2)) #add a piece to board
-            piece = red_piece
-            added_to_grid = False
-            auto = False
+    while True:
 
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                #see if user selected "a" for automatic
+                    return "auto"
+
+                if event.key == pygame.K_c:
+                #see if user selected "c" for computer
+                    return "computer"
+
+                if event.key == pygame.K_p:
+                    return "play"
+
+
+
+def game_loop(screen, clock, mode):
+    b = Board(screen)
+    red_piece = Piece(screen, 1, (int(width*0.75), height/2))
+    piece = red_piece
+
+    added_to_grid = False
+
+    while True:
+        screen.fill(BLACK)
+        b.draw()
         if piece:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-            #if mouse is over the piece, set piece as grabbed
-            #and record the offset as the distance from mouse to center
-                piece.is_grabbed = piece.is_mouse_over(event)
-                if piece.is_grabbed:
-                    piece.set_offset(event.pos)
+            piece.draw()
 
-
-            if event.type == pygame.MOUSEMOTION and piece.is_grabbed:
-            #if you move while the piece is grabbed, move the piece
-            #with you.
-                if piece.is_grabbed:
-                    piece.move(event.pos)
-
-            if event.type == pygame.MOUSEBUTTONUP:
-            #if you unclick piece over the board, get "indices" of board
-            #position to put piece
-                if piece.is_grabbed:
-                    indices = b.get_indices(piece.pos)
-                    if indices:
-                        slot_pos = b.get_slot_pos_from_indices(indices)
-
-                        x,y = indices
-                        b.grid[y][x] = piece.player
-                        added_to_grid = True
-
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_x):
+                sys.exit()
 
             if event.type == pygame.KEYDOWN:
-                #see if a slot was selected by user (key 1-7)
-                slot = event.key - 49#if you press 1-7 event.key = 49-55
-                if slot <= 6:
-                    row = get_row(b.grid, slot)
-                    if row:
-                        b.grid[row][slot] = piece.player
-                        added_to_grid = True
-
-                #see if user selected "a" for automatic
-                elif event.key == pygame.K_a:
-                    auto = True
-
-    if auto:
-        slot = random.randint(0,6)
-        row = get_row(b.grid, slot)
-        if row:
-            b.grid[row][slot] = piece.player
-            added_to_grid = True
+                if event.key == pygame.K_r:
+                #player wants to reset game
+                    mode = setup_loop(screen)
+                    b = Board(screen) #create a new board
+                    red_piece = Piece(screen, 1, (int(width*0.75), height/2)) #add a piece to board
+                    piece = red_piece
+                    added_to_grid = False
 
 
-    if added_to_grid:
-        #alternate player 1 and 2
-        next_player = (piece.player)%2 + 1
-
-        added_to_grid = False
-
-        winner = determine_winner(b.grid)
-        if winner:
-            print "********************"
-            print "Player %s WINS!!" % (winner)
-            print "********************"
-            piece = None
-            auto = False
-            pprint.pprint(b.grid)
-            print "Please press 'r' to restart game"
-        else:
-            piece = Piece(screen, next_player, (int(width*0.75), height/2))
-
-            #pprint.pprint(b.grid)
+            if piece:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                #if mouse is over the piece, set piece as grabbed
+                #and record the offset as the distance from mouse to center
+                    piece.is_grabbed = piece.is_mouse_over(event)
+                    if piece.is_grabbed:
+                        piece.set_offset(event.pos)
 
 
-    pygame.display.flip()
-    clock.tick(100)
+                if event.type == pygame.MOUSEMOTION and piece.is_grabbed:
+                #if you move while the piece is grabbed, move the piece
+                #with you.
+                    if piece.is_grabbed:
+                        piece.move(event.pos)
+
+                if event.type == pygame.MOUSEBUTTONUP:
+                #if you unclick piece over the board, get "indices" of board
+                #position to put piece
+                    if piece.is_grabbed:
+                        indices = b.get_indices(piece.pos)
+                        if indices:
+                            slot_pos = b.get_slot_pos_from_indices(indices)
+
+                            x,y = indices
+                            b.grid[y][x] = piece.player
+                            added_to_grid = True
+
+
+                if event.type == pygame.KEYDOWN:
+                    #see if a slot was selected by user (key 1-7)
+                    slot = event.key - 49#if you press 1-7 event.key = 49-55
+                    if slot <= 6:
+                        row = get_row(b.grid, slot, ROWS)
+                        if row != None:
+                            b.grid[row][slot] = piece.player
+                            added_to_grid = True
+
+
+        if mode == "computer":
+            if piece.player == 2:
+                slot, row = get_random_spot(b.grid)
+                if row != None:
+                    b.grid[row][slot] = piece.player
+                    added_to_grid = True
+
+        if mode == "auto":
+            slot, row = get_random_spot(b.grid)
+            if row != None:
+                b.grid[row][slot] = piece.player
+                added_to_grid = True
+
+        if added_to_grid:
+            #alternate player 1 and 2
+            next_player = (piece.player)%2 + 1
+
+            added_to_grid = False
+
+            winner = determine_winner(b.grid)
+            if winner:
+                print "********************"
+                print "Player %s WINS!!" % (winner)
+                print "********************"
+                piece = None
+                mode = None
+                pprint.pprint(b.grid)
+                print "Please press 'r' to restart game"
+            else:
+                piece = Piece(screen, next_player, (int(width*0.75), height/2))
+
+                #pprint.pprint(b.grid)
+
+
+        pygame.display.flip()
+        clock.tick(100)
+
+def get_computer_level():
+    return None
+
+
+if __name__ == '__main__':
+    screen = pygame.display.set_mode((width, height))
+    clock = pygame.time.Clock()
+
+    computer = False
+
+    '''
+    grid = [[0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 2, 0],
+            [2, 0, 1, 0, 2, 1, 0],
+            [1, 0, 2, 2, 0, 2, 0],
+            [1, 0, 2, 1, 1, 1, 2]]
+
+    print determine_winner(grid)
+
+    '''
+
+    print "Welcome to Connect Four!"
+    print "Please move a piece, select keys 1-7, or select 'a' to automate game"
+    print "Select 'c' if you want to play against the computer (you are red)"
+
+    mode = setup_loop(screen)
+    game_loop(screen, clock, mode)
+
+
