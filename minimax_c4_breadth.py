@@ -1,7 +1,7 @@
 import connect_four
 import pprint
 
-ROWS = 3
+ROWS = 5
 COLUMNS = 3
 TO_WIN = 3
 
@@ -95,7 +95,7 @@ def add_player_to_board(b, player):
         row = connect_four.get_row(b, i, ROWS)
         if row != None:
             new_b[connect_four.get_row(b, i, ROWS)][i] = player
-            boards.append([new_b[:],i] )
+            boards.append(new_b[:])
     return boards
 
 def is_board(board):
@@ -105,51 +105,7 @@ def is_board(board):
                 return True
     return False
 
-def no_more_moves(board):
-    #if there are no 0's in the top row, there are no more moves
-    return not(0 in board[0])
-
-def get_max_or_min(possible_moves, player):
-    max_value = -1
-    min_value = 1
-    max_col = 0
-    min_col = 0
-
-    for item in possible_moves:
-        if item[0] > max_value:
-            max_value = item[0]
-            max_col = item[1]
-        if item[0] < min_value:
-            min_value = item[0]
-            min_col = item[1]
-    if player == MAX:
-        return (max_value, max_col)
-    if player == MIN:
-        return (min_value, min_col)
-
-def recur_add_player_depth(board, player, boards=[], col=0):
-    pp.pprint(board)
-    winner = determine_winner(board)
-    if winner:
-        if winner == MAX:
-            return (1, col)
-        if winner == MIN:
-            return (-1, col)
-    elif no_more_moves(board):
-        return (0, col)
-    else:
-        boards = add_player_to_board(board, player)
-        possible_moves = []
-        for b, col in boards:
-            if player == MAX:
-                next_player = MIN
-            else:
-                next_player = MAX
-            recur_result, _ = recur_add_player_depth(b, next_player, boards, col)
-            possible_moves.append((recur_result, col))
-        return get_max_or_min(possible_moves, player)
-
-def recur_add_player_breadth(boards, player):
+def recur_add_player(boards, player):
     if is_board(boards):
         if determine_winner(boards):
             return None
@@ -158,15 +114,17 @@ def recur_add_player_breadth(boards, player):
     else:
         all_the_boards = []
         for b in boards:
-            next_iter_boards = recur_add_player_breadth(b, player)
+            next_iter_boards = recur_add_player(b, player)
             if next_iter_boards:
                 all_the_boards.append(next_iter_boards[:])
         return all_the_boards
 
+
+
 def test_max(board, num):
     print
     print "MAX", num
-    max_1 = recur_add_player_breadth(board, MAX)
+    max_1 = recur_add_player(board, MAX)
     for item in max_1:
         pp.pprint(item)
         print
@@ -175,18 +133,16 @@ def test_max(board, num):
 def test_min(board, num):
     print
     print "MIN", num
-    min_1 = recur_add_player_breadth(board, MIN)
+    min_1 = recur_add_player(board, MIN)
     for item in min_1:
         pp.pprint(item)
         print
     return min_1
 
-no_moves_EXAMPLE = [[1, 2, 2], [1, 1, 1], [2, 1, 2]]
-
 max_1_SOLUTION = [
-     [[0, 2, 0], [1, 1, 0], [2, 1, 0]],
-     [[0, 2, 0], [0, 1, 0], [2, 1, 0]],
-     [[0, 2, 0], [0, 1, 0], [2, 1, 1]]]
+     [[0, 0, 0], [0, 0, 0], [0, 2, 0], [1, 1, 0], [2, 1, 0]],
+     [[0, 0, 0], [0, 1, 0], [0, 2, 0], [0, 1, 0], [2, 1, 0]],
+     [[0, 0, 0], [0, 0, 0], [0, 2, 0], [0, 1, 0], [2, 1, 1]]]
 
 
 min_1_SOLUTION = [
@@ -208,8 +164,8 @@ diag_win_EXAMPLE = [[0, 0, 0], [0, 0, 0], [1, 2, 0], [2, 1, 0], [2, 1, 1]]
 
 def play_board(board, depth):
     for i in range(depth):
-        max_board = recur_add_player_breadth(board, MAX)
-        min_board = recur_add_player_breadth(max_board, MIN)
+        max_board = recur_add_player(board, MAX)
+        min_board = recur_add_player(max_board, MIN)
         board = min_board
     return board
 
@@ -233,13 +189,9 @@ def find_level(board):
 
 if __name__ == '__main__':
     board = make_sample_board(BLANK_BOARD)
-    pp = pprint.PrettyPrinter(width = 20)
+    pp = pprint.PrettyPrinter(width = 40)
+    #pp.pprint(board)
 
-    assert no_more_moves(board) == False
-    assert no_more_moves(no_moves_EXAMPLE) == True
-
-    print recur_add_player_depth(board, MAX)
-    '''
     first_level = play_board(board, 1)
     print_board(board, 5)
 
@@ -247,4 +199,3 @@ if __name__ == '__main__':
     assert is_row_win(row_win_EXAMPLE) == True
     assert is_col_win(col_win_EXAMPLE) == True
     assert is_diag_win(diag_win_EXAMPLE) == True
-    '''

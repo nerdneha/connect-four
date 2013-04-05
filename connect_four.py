@@ -18,6 +18,7 @@ PLAYER_TO_COLOR = {1: RED, 2: BLUE}
 
 ROWS = 6
 COLUMNS = 7
+TO_WIN = 4
 
 pygame.font.init()
 
@@ -146,16 +147,17 @@ def get_distance(mouse, piece):
     return math.sqrt(distance2)
 
 def is_row_win(grid):
+    mr = (COLUMNS + 1)/2
     for row in reversed(grid):
         streak = 0
-        if row[3] != 0:
-            is_winner = row[3]
+        if row[mr] != 0:
+            is_winner = row[mr]
             for column in row:
                 if column == is_winner:
                     streak += 1
                 else:
                     streak = 0
-                if streak >= 4:
+                if streak >= TO_WIN:
                     print "row winner"
                     return is_winner
     return None
@@ -163,7 +165,7 @@ def is_row_win(grid):
 def is_col_win(grid):
     row3 = grid[2]
     row4 = grid[3]
-    for i in range(7):
+    for i in range(COLUMNS):
         #check to see if row3 and 4 have a match first
         if row3[i] != 0 and row3[i] == row4[i]:
             is_winner = row3[i]
@@ -173,7 +175,7 @@ def is_col_win(grid):
                     streak += 1
                 else:
                     streak = 0
-                if streak >=4:
+                if streak >= TO_WIN:
                     print "column winner"
                     return is_winner
     return None
@@ -187,7 +189,7 @@ def check_diagonal(player, index, grid):
     for row in reversed(grid):
         f_index += 1
         b_index -= 1
-        if f_index <=  6 and row[f_index] == player:
+        if f_index < COLUMNS and row[f_index] == player:
             f_streak += 1
         else:
             f_streak = 0
@@ -197,17 +199,18 @@ def check_diagonal(player, index, grid):
             b_streak = 0
         if f_streak == 0 and b_streak == 0:
             return None
-    if f_streak == 4 or b_streak == 4:
+    if f_streak == TO_WIN or b_streak == TO_WIN:
         return player
     else:
         return None
 
 def is_diag_win(grid):
-    for i, row in enumerate(reversed(grid[3:])):
+    mr = (ROWS + 1)/2
+    for i, row in enumerate(reversed(grid[mr:])):
         for j, column in enumerate(row):
             if column != 0:
-                top = 2 - i
-                bottom = 5 - i
+                top = ROWS - TO_WIN - i
+                bottom = ROWS - 1 - i
                 winner = check_diagonal(column, j,  grid[top:bottom])
                 if winner:
                     print "diagonal winner"
