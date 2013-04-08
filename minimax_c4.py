@@ -1,7 +1,7 @@
 import connect_four
 import pprint
 
-ROWS = 3
+ROWS = 5
 COLUMNS = 3
 TO_WIN = 3
 
@@ -86,6 +86,8 @@ def make_sample_board(b):
     b[connect_four.get_row(b,0,ROWS)][0] = MIN
     b[connect_four.get_row(b,1,ROWS)][1] = MAX
     b[connect_four.get_row(b,1,ROWS)][1] = MIN
+    b[connect_four.get_row(b,0,ROWS)][0] = MAX
+    b[connect_four.get_row(b,2,ROWS)][2] = MIN
     return b
 
 def add_player_to_board(b, player):
@@ -129,6 +131,8 @@ def get_max_or_min(possible_moves, player):
 
 def recur_add_player_depth(board, player, boards=[], col=0):
     pp.pprint(board)
+    import pdb
+    pdb.set_trace()
     winner = determine_winner(board)
     if winner:
         if winner == MAX:
