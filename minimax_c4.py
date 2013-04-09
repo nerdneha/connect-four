@@ -1,8 +1,8 @@
 import connect_four
 import pprint
 
-ROWS = 3
-COLUMNS = 3
+ROWS = 5
+COLUMNS = 5
 TO_WIN = 3
 
 MAX = 1
@@ -110,10 +110,13 @@ def get_max_or_min(possible_moves, player):
     else:
         return min(possible_moves)
 
-def recur_add_player_depth(board, player, boards=[], col=0):
-    pp.pprint(board)
-    import pdb
-    pdb.set_trace()
+def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0):
+    #pp.pprint(board)
+    #import pdb
+    #pdb.set_trace()
+    if str(board) in memoized_board:
+        return memoized_board[str(board)]
+
     winner = determine_winner(board)
     if winner:
         if winner == MAX:
@@ -130,7 +133,10 @@ def recur_add_player_depth(board, player, boards=[], col=0):
                 next_player = MIN
             else:
                 next_player = MAX
-            recur_result, _ = recur_add_player_depth(b, next_player, boards, col)
+            recur_result, _ = recur_add_player_depth(b, next_player, memoized_board, boards, col)
+            memoized_board[str(b)] = (recur_result, col)
+            #print memoized_board
+
             possible_moves.append((recur_result, col))
         return get_max_or_min(possible_moves, player)
 
