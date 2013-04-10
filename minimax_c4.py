@@ -2,7 +2,7 @@ import connect_four
 import pprint
 
 ROWS = 5
-COLUMNS = 5
+COLUMNS = 7
 TO_WIN = 3
 
 MAX = 1
@@ -11,11 +11,11 @@ MIN = 2
 BLANK_BOARD = [[0 for i in range(COLUMNS)] for j in range(ROWS)]
 
 def is_row_win(grid):
-    mr = (COLUMNS + 1)/2
+    mc = (COLUMNS - 1) / 2
     for row in reversed(grid):
         streak = 0
-        if row[mr] != 0:
-            is_winner = row[mr]
+        if row[mc] != 0:
+            is_winner = row[mc]
             for column in row:
                 if column == is_winner:
                     streak += 1
@@ -26,11 +26,11 @@ def is_row_win(grid):
     return None
 
 def is_col_win(grid):
-    mc = grid[((ROWS+1)/2)]
+    mr = grid[((ROWS - 1) / 2)]
     for i in range(COLUMNS):
         #check to see if row3 and 4 have a match first
-        if mc[i] != 0:
-            is_winner = mc[i]
+        if mr[i] != 0:
+            is_winner = mr[i]
             streak = 0
             for row in reversed(grid):
                 if row[i] == is_winner:
@@ -66,7 +66,7 @@ def check_diagonal(player, index, grid):
         return None
 
 def is_diag_win(grid):
-    mr = (ROWS + 1)/2
+    mr = (ROWS - 1)/2
     for i, row in enumerate(reversed(grid[mr:])):
         for j, column in enumerate(row):
             if column != 0:
@@ -82,12 +82,12 @@ def determine_winner(grid):
 
 def make_sample_board(b):
     r = ROWS
-    b[connect_four.get_row(b,1,ROWS)][1] = MAX
-    b[connect_four.get_row(b,0,ROWS)][0] = MIN
-    b[connect_four.get_row(b,1,ROWS)][1] = MAX
-    b[connect_four.get_row(b,1,ROWS)][1] = MIN
-    b[connect_four.get_row(b,0,ROWS)][0] = MAX
-    b[connect_four.get_row(b,2,ROWS)][2] = MIN
+    #b[connect_four.get_row(b,2,ROWS)][2] = MAX
+    #b[connect_four.get_row(b,1,ROWS)][1] = MIN
+    #b[connect_four.get_row(b,2,ROWS)][2] = MAX
+    #b[connect_four.get_row(b,2,ROWS)][2] = MIN
+    #b[connect_four.get_row(b,1,ROWS)][1] = MAX
+    #b[connect_four.get_row(b,3,ROWS)][3] = MIN
     return b
 
 def make_move(b, player):
@@ -107,7 +107,7 @@ def no_more_moves(board):
 def get_max_or_min(possible_moves, player):
     if player == MAX:
         return max(possible_moves)
-    else:
+    else: #player is MIN
         return min(possible_moves)
 
 def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0):
@@ -115,10 +115,12 @@ def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0)
     #import pdb
     #pdb.set_trace()
     if str(board) in memoized_board:
+        #print "**************the board was memoized already, will result in", memoized_board[str(board)]
         return memoized_board[str(board)]
 
     winner = determine_winner(board)
     if winner:
+        #print "************* %s is winner!" % (winner)
         if winner == MAX:
             return (1, col)
         if winner == MIN:
@@ -138,6 +140,9 @@ def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0)
             #print memoized_board
 
             possible_moves.append((recur_result, col))
+            if (player == MAX and recur_result == 1) or (player == MIN and recur_result == -1):
+                #print "*************PRUNED"
+                return (recur_result, col)
         return get_max_or_min(possible_moves, player)
 
 no_moves_EXAMPLE = [[1, 2, 2], [1, 1, 1], [2, 1, 2]]
