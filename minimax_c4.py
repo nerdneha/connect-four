@@ -8,6 +8,8 @@ TO_WIN = 3
 MAX = 1
 MIN = 2
 
+MINIMAX_POINTS = {1: 1, 2: -1}
+
 BLANK_BOARD = [[0 for i in range(COLUMNS)] for j in range(ROWS)]
 
 
@@ -69,13 +71,15 @@ def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
 
 def make_sample_board(b):
-    #r = ROWS
-    #b[get_row(b,2,ROWS)][2] = MAX
-    #b[get_row(b,1,ROWS)][1] = MIN
-    #b[get_row(b,2,ROWS)][2] = MAX
-    #b[get_row(b,2,ROWS)][2] = MIN
-    #b[get_row(b,1,ROWS)][1] = MAX
-    #b[get_row(b,3,ROWS)][3] = MIN
+    bb = (COLUMNS - 1) / 2
+    a = bb - 1
+    c = bb + 1
+    #b[get_row(b,bb,ROWS)][bb] = MAX
+    #b[get_row(b,a,ROWS)][a] = MIN
+    #b[get_row(b,bb,ROWS)][bb] = MAX
+    #b[get_row(b,bb,ROWS)][bb] = MIN
+    #b[get_row(b,a,ROWS)][a] = MAX
+    #b[get_row(b,c,ROWS)][c] = MIN
     return b
 
 def make_move(b, player):
@@ -104,41 +108,54 @@ def reverse_board(grid):
         reversed_grid.append([col for col in reversed(row)])
     return reversed_grid
 
+def detect_win(boards):
+    for board, col in boards:
+        if determine_winner(board):
+            return (True, board, col)
+    return (False, board, col)
+
+def memoize_board(b, recur_result, col, memoized_board):
+    memoized_board[str(b)] = (recur_result, col)
+    rev_b = reverse_board(b)
+    memoized_board[str(rev_b)] = (recur_result, COLUMNS - col - 1)
+    return memoized_board
+
 def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0):
     #pp.pprint(board)
     #pdb.set_trace()
     if str(board) in memoized_board:
-        #print "**************the board was memoized already, will result in", memoized_board[str(board)]
+        #print "**the board was memoized already, will result in", memoized_board[str(board)]
         return memoized_board[str(board)]
 
     winner = determine_winner(board)
     if winner:
-        #print "************* %s is winner!" % (winner)
-        if winner == MAX:
-            return (1, col)
-        if winner == MIN:
-            return (-1, col)
+        #print "** %s is winner!" % (winner)
+        return (MINIMAX_POINTS[player], col)
     elif no_more_moves(board):
         return (0, col)
     else:
         boards = make_move(board, player)
         possible_moves = []
-        for b, col in boards:
-            if player == MAX:
-                next_player = MIN
-            else:
-                next_player = MAX
-            recur_result, _ = recur_add_player_depth(b, next_player, memoized_board, boards, col)
-            memoized_board[str(b)] = (recur_result, col)
-            rev_b = reverse_board(b)
-            memoized_board[str(rev_b)] = (recur_result, COLUMNS - col - 1)
-            #print memoized_board
+        pos_win, b, win_col = detect_win(boards)
 
-            possible_moves.append((recur_result, col))
-            if (player == MAX and recur_result == 1) or (player == MIN and recur_result == -1):
-                #print "*************PRUNED"
-                return (recur_result, col)
-        return get_max_or_min(possible_moves, player)
+        if pos_win:
+            col = win_col
+            recur_result = MINIMAX_POINTS[player]
+            memoized_board = memoize_board(b, recur_result, col, memoized_board)
+            return (recur_result, col)
+        else:
+            for b, col in boards:
+                if player == MAX:
+                    next_player = MIN
+                else:
+                    next_player = MAX
+                recur_result, _ = recur_add_player_depth(b, next_player, memoized_board, boards, col)
+                memoized_board = memoize_board(b, recur_result, col, memoized_board)
+                possible_moves.append((recur_result, col))
+                if MINIMAX_POINTS[player] == recur_result:
+                    #print "**PRUNED"
+                    return (recur_result, col)
+    return get_max_or_min(possible_moves, player)
 
 no_moves_EXAMPLE = [[1, 2, 2], [1, 1, 1], [2, 1, 2]]
 
@@ -172,6 +189,7 @@ if __name__ == '__main__':
     board = make_sample_board(BLANK_BOARD)
     pp = pprint.PrettyPrinter(width = 20)
 
+    pp.pprint(board)
     print recur_add_player_depth(board, MAX)
 '''
     assert no_more_moves(board) == False
