@@ -1,9 +1,9 @@
 import pprint
 import pdb
 
-ROWS = 5
-COLUMNS = 5 #7
-TO_WIN = 3
+ROWS = 6
+COLUMNS = 7
+TO_WIN = 4
 
 MAX = 1
 MIN = 2
@@ -11,6 +11,13 @@ MIN = 2
 MINIMAX_POINTS = {1: 1, 2: -1}
 
 BLANK_BOARD = [[0 for i in range(COLUMNS)] for j in range(ROWS)]
+
+if COLUMNS == 3:
+    ORDER = [1, 0, 2]
+elif COLUMNS == 5:
+    ORDER = [2, 1, 3, 0, 4]
+elif COLUMNS == 7:
+    ORDER = [3, 2, 4, 1, 5, 0, 6]
 
 
 def get_row(grid, col, rows):
@@ -70,22 +77,30 @@ def is_diag_win(grid):
 def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
 
+def move_in_column(b, col, ROWS, player):
+    new_b = b[:]
+    new_b[get_row(b,col, ROWS)][col] = player
+    return new_b
+
 def make_sample_board(b):
     bb = (COLUMNS - 1) / 2
     a = bb - 1
     c = bb + 1
-    #b[get_row(b,bb,ROWS)][bb] = MAX
-    #b[get_row(b,a,ROWS)][a] = MIN
-    #b[get_row(b,bb,ROWS)][bb] = MAX
-    #b[get_row(b,bb,ROWS)][bb] = MIN
-    #b[get_row(b,a,ROWS)][a] = MAX
-    #b[get_row(b,c,ROWS)][c] = MIN
+
+    b = move_in_column(b, bb, ROWS, MAX)
+    b = move_in_column(b, a, ROWS, MIN)
+    b = move_in_column(b, bb, ROWS, MAX)
+    b = move_in_column(b, bb, ROWS, MIN)
+    b = move_in_column(b, a, ROWS, MAX)
+    b = move_in_column(b, c, ROWS, MIN)
+    b = move_in_column(b, c, ROWS, MAX)
+    b = move_in_column(b, a-1, ROWS, MIN)
     return b
 
 def make_move(b, player):
     boards = []
-    for i in range(COLUMNS):
-        new_b = [row[:] for row in b]
+    for i in ORDER:
+        new_b = [row[:] for row in b] #copy board
         row = get_row(b, i, ROWS)
         if row != None:
             new_b[get_row(b, i, ROWS)][i] = player
@@ -187,7 +202,7 @@ diag_win_REVERSED = [[0, 0, 0], [0, 0, 0], [0, 2, 1], [0, 1, 2], [1, 1, 2]]
 
 if __name__ == '__main__':
     board = make_sample_board(BLANK_BOARD)
-    pp = pprint.PrettyPrinter(width = 20)
+    pp = pprint.PrettyPrinter(width = 30)
 
     pp.pprint(board)
     print recur_add_player_depth(board, MAX)
