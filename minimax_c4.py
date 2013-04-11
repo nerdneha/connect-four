@@ -1,8 +1,8 @@
 import pprint
 import pdb
 
-ROWS = 5 #5
-COLUMNS = 3 #7
+ROWS = 5
+COLUMNS = 5 #7
 TO_WIN = 3
 
 MAX = 1
@@ -69,7 +69,7 @@ def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
 
 def make_sample_board(b):
-    r = ROWS
+    #r = ROWS
     #b[get_row(b,2,ROWS)][2] = MAX
     #b[get_row(b,1,ROWS)][1] = MIN
     #b[get_row(b,2,ROWS)][2] = MAX
@@ -98,6 +98,12 @@ def get_max_or_min(possible_moves, player):
     else: #player is MIN
         return min(possible_moves)
 
+def reverse_board(grid):
+    reversed_grid = []
+    for row in grid:
+        reversed_grid.append([col for col in reversed(row)])
+    return reversed_grid
+
 def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0):
     #pp.pprint(board)
     #pdb.set_trace()
@@ -124,6 +130,8 @@ def recur_add_player_depth(board, player, memoized_board = {}, boards=[], col=0)
                 next_player = MAX
             recur_result, _ = recur_add_player_depth(b, next_player, memoized_board, boards, col)
             memoized_board[str(b)] = (recur_result, col)
+            rev_b = reverse_board(b)
+            memoized_board[str(rev_b)] = (recur_result, COLUMNS - col - 1)
             #print memoized_board
 
             possible_moves.append((recur_result, col))
@@ -156,17 +164,20 @@ min_1_SOLUTION = [
 row_win_EXAMPLE = [[0, 0, 0], [0, 0, 0], [0, 2, 0], [1, 1, 1], [2, 1, 2]]
 col_win_EXAMPLE = [[0, 0, 0], [0, 0, 0], [0, 1, 0], [0, 1, 0], [2, 1, 0]]
 diag_win_EXAMPLE = [[0, 0, 0], [0, 0, 0], [1, 2, 0], [2, 1, 0], [2, 1, 1]]
+diag_win_REVERSED = [[0, 0, 0], [0, 0, 0], [0, 2, 1], [0, 1, 2], [1, 1, 2]]
+
 
 
 if __name__ == '__main__':
     board = make_sample_board(BLANK_BOARD)
     pp = pprint.PrettyPrinter(width = 20)
 
+    print recur_add_player_depth(board, MAX)
+'''
     assert no_more_moves(board) == False
     assert no_more_moves(no_moves_EXAMPLE) == True
-
-    #print recur_add_player_depth(board, MAX)
-
     assert is_row_win(row_win_EXAMPLE) == 1
     assert is_col_win(col_win_EXAMPLE) == 1
     assert is_diag_win(diag_win_EXAMPLE) == 1
+    assert reverse_board(diag_win_EXAMPLE) == diag_win_REVERSED
+    '''
