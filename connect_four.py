@@ -16,6 +16,8 @@ RADIUS = height/20
 
 PLAYER_TO_COLOR = {1: RED, 2: BLUE}
 
+PLAYERS_COLOR = {1: "red", 2: "blue"}
+
 ROWS = 6
 COLUMNS = 7
 TO_WIN = 4
@@ -63,7 +65,8 @@ class Board:
         self.top_disp_offset = self.box_size
 
 
-    def draw_board(self):
+    def draw_board(self, winner):
+        my_font = pygame.font.SysFont("monospace", 20)
         for row_num in range(self.rows+1):
             row_start = (self.left_disp_offset, self.top_disp_offset + (self.box_size *  row_num))
             row_end = (self.left_disp_offset + (self.box_size * self.cols), self.top_disp_offset + (self.box_size *  row_num))
@@ -71,7 +74,25 @@ class Board:
         for col_num in range(self.cols+1):
             col_start = (self.left_disp_offset + (self.box_size * col_num), self.top_disp_offset)
             col_end = (self.left_disp_offset + (self.box_size * col_num), self.top_disp_offset + (self.box_size * self.rows))
+            if col_num > 0:
+                col_label= my_font.render(str(col_num), 1, WHITE)
+                self.screen.blit(col_label, (self.left_disp_offset + (self.box_size * col_num) - self.box_size/2, height-40))
             pygame.draw.line(self.screen, WHITE, col_start, col_end)
+        if winner != None:
+            win_text = "Player %s (%s) WINS!!" % (winner, PLAYERS_COLOR[winner])
+            my_font = pygame.font.SysFont("monospace", 20)
+            winner_text = my_font.render(win_text, 1, WHITE)
+            self.screen.blit(winner_text, (160, 10))
+
+    def write_board_instructions(self):
+        my_font = pygame.font.SysFont("monospace", 15)
+        a = my_font.render("Instructions:", 1, (0,255,0))
+        b = my_font.render("Move a chip or", 1, WHITE)
+        c = my_font.render("select a column", 1, WHITE)
+
+        self.screen.blit(a, (480, 100))
+        self.screen.blit(b, (470, 120))
+        self.screen.blit(c, (470, 140))
 
     def remove_offset(self, pos):
         x,y = pos
@@ -107,8 +128,9 @@ class Board:
         board_y_pos = int(self.box_size * (y + 0.5))
         return self.add_offset((board_x_pos, board_y_pos))
 
-    def draw(self):
-        self.draw_board()
+    def draw(self, winner):
+        self.draw_board(winner)
+        self.write_board_instructions()
         for i, row in enumerate(self.grid):
             for j, col in enumerate(row):
                 if col != 0:
@@ -146,90 +168,82 @@ def get_distance(mouse, piece):
 
     return math.sqrt(distance2)
 
+def get_winner(connected_squares):
+    if len(set(connected_squares)) == 1:
+        member = connected_squares.pop()
+        return member
+
 def is_row_win(grid):
-    mr = (COLUMNS + 1)/2
     for row in reversed(grid):
-        streak = 0
-        if row[mr] != 0:
-            is_winner = row[mr]
-            for column in row:
-                if column == is_winner:
-                    streak += 1
-                else:
-                    streak = 0
-                if streak >= TO_WIN:
-                    print "row winner"
-                    return is_winner
-    return None
+        for start in range(COLUMNS - TO_WIN + 1):
+            if row[start] != 0:
+                connected_squares = [row[start+i] for i in range(TO_WIN)]
+                winner = get_winner(connected_squares)
+                if winner:
+                    return winner
 
 def is_col_win(grid):
-    row3 = grid[2]
-    row4 = grid[3]
-    for i in range(COLUMNS):
-        #check to see if row3 and 4 have a match first
-        if row3[i] != 0 and row3[i] == row4[i]:
-            is_winner = row3[i]
-            streak = 0
-            for row in reversed(grid):
-                if row[i] == is_winner:
-                    streak += 1
-                else:
-                    streak = 0
-                if streak >= TO_WIN:
-                    print "column winner"
-                    return is_winner
-    return None
+    for col_num in range(COLUMNS):
+        col = [row[col_num] for row in reversed(grid)]
+        for start in range(ROWS - TO_WIN + 1):
+            if col[start] != 0:
+                connected_squares = [col[start+i] for i in range(TO_WIN)]
+                winner = get_winner(connected_squares)
+                if winner:
+                    return winner
 
-def check_diagonal(player, index, grid):
-    f_index = index
-    b_index = index
-    f_streak = 1
-    b_streak = 1
-
-    for row in reversed(grid):
-        f_index += 1
-        b_index -= 1
-        if f_index < COLUMNS and row[f_index] == player:
-            f_streak += 1
-        else:
-            f_streak = 0
-        if b_index >= 0 and row[b_index] == player:
-            b_streak += 1
-        else:
-            b_streak = 0
-        if f_streak == 0 and b_streak == 0:
-            return None
-    if f_streak == TO_WIN or b_streak == TO_WIN:
-        return player
-    else:
-        return None
+def generate_legal_diagonals(grid):
+    diags = []
+    #top left -> bottom right
+    for row_num in range(ROWS - TO_WIN + 1):
+        for col_num in range (COLUMNS - TO_WIN + 1):
+            connected_squares = [grid[row_num+i][col_num+i] for i in range(TO_WIN)]
+            if 0 not in connected_squares:
+                diags.append(connected_squares)
+    #bottom left -> top right
+    for row_num in range(TO_WIN - 1, ROWS):
+        for col_num in range (COLUMNS - TO_WIN + 1):
+            connected_squares = [grid[row_num-i][col_num+i] for i in range(TO_WIN)]
+            if 0 not in connected_squares:
+                diags.append(connected_squares)
+    return diags
 
 def is_diag_win(grid):
-    mr = (ROWS + 1)/2
-    for i, row in enumerate(reversed(grid[mr:])):
-        for j, column in enumerate(row):
-            if column != 0:
-                top = ROWS - TO_WIN - i
-                bottom = ROWS - 1 - i
-                winner = check_diagonal(column, j,  grid[top:bottom])
-                if winner:
-                    print "diagonal winner"
-                    return winner
-    return None
+    for diag in generate_legal_diagonals(grid):
+        winner = get_winner(diag)
+        if winner:
+            return winner
 
 def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
-
 def setup_loop(screen):
     screen.fill(BLACK)
+    #surface = pygame.Surface((200,200))
     my_font = pygame.font.SysFont("monospace", 20)
-    label = my_font.render("Please press 'a' to watch an automatic game, 'c' to play the computer,\n or 'p' to play a two-player game", 1, (255, 255, 255))
-    screen.blit(label, (25,height/2))
+    welcome_msg = my_font.render("Welcome to Connect Four!", 1, WHITE)
+
+    a = my_font.render("Please press:", 1, WHITE)
+    b = my_font.render("- 'a' to automate game", 1, WHITE)
+    c = my_font.render("- 'c' to play against the computer", 1, WHITE)
+    d = my_font.render("- 'p' to play a two-player game", 1, WHITE)
+    #surface.blit(labela, (25,height/2))
+    #surface.blit(labelb, (25,(height/2 + 50)))
+    #screen.blit(surface, (10,10))
+    h = 120
+    screen.blit(welcome_msg, (160, 60))
+    screen.blit(a, (25, h))
+    screen.blit(b, (45, h + 25))
+    screen.blit(c, (45, h + 50))
+    screen.blit(d, (45, h + 75))
+
     pygame.display.flip()
 
     while True:
 
         for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+                return "quit"
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                 #see if user selected "a" for automatic
@@ -242,6 +256,10 @@ def setup_loop(screen):
                 if event.key == pygame.K_p:
                     return "play"
 
+                if event.key == pygame.K_q or event.key == pygame.K_x:
+                    sys.exit()
+                    return "quit"
+
 
 
 def game_loop(screen, clock, mode):
@@ -250,15 +268,16 @@ def game_loop(screen, clock, mode):
     piece = red_piece
 
     added_to_grid = False
+    winner = None
 
     while True:
         screen.fill(BLACK)
-        b.draw()
+        b.draw(winner)
         if piece:
             piece.draw()
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_x):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_x or event.key == pygame.K_q)):
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
@@ -355,18 +374,6 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
 
     computer = False
-
-    '''
-    grid = [[0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 2, 0],
-            [2, 0, 1, 0, 2, 1, 0],
-            [1, 0, 2, 2, 0, 2, 0],
-            [1, 0, 2, 1, 1, 1, 2]]
-
-    print determine_winner(grid)
-
-    '''
 
     print "Welcome to Connect Four!"
     print "Please move a piece, select keys 1-7, or select 'a' to automate game"
