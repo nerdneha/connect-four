@@ -150,17 +150,15 @@ def memoize_board(b, recur_result, col, memoized_board):
     return memoized_board
 
 def recur_add_player_depth(board, player, max_depth, to_win=4, memoized_board = {}, boards=[], col=0, depth=1):
-#   if depth < 2:
 #       pp.pprint(board)
         #pdb.set_trace()
-    #print depth, max_depth
     if (str(board) in memoized_board) and memoized_board[str(board)][0] != 0:
-        print "**the board was memoized already, will result in", memoized_board[str(board)]
+        #print "**the board was memoized already, will result in", memoized_board[str(board)]
         return memoized_board[str(board)]
 
     winner = determine_winner(board, to_win)
     if winner:
-        print "** %s is winner!" % (winner)
+        #print "** %s is winner!" % (winner)
         return (MINIMAX_POINTS[player], col)
     elif no_more_moves(board):
         return (0, col)
@@ -172,7 +170,7 @@ def recur_add_player_depth(board, player, max_depth, to_win=4, memoized_board = 
         pos_win, b, win_col = detect_win(boards, to_win)
 
         if pos_win:
-            print "possible win", win_col
+            #print "possible win", win_col
             col = win_col
             recur_result = MINIMAX_POINTS[player]
             memoized_board = memoize_board(b, recur_result, col, memoized_board)
@@ -198,7 +196,7 @@ def recur_add_player_depth(board, player, max_depth, to_win=4, memoized_board = 
                     memoized_board = memoize_board(b, recur_result, col, memoized_board)
                 possible_moves.append((recur_result, col))
                 if MINIMAX_POINTS[player] == recur_result:
-                    print "**PRUNED"
+                    #print "**PRUNED"
                     return (recur_result, col)
     return get_max_or_min(possible_moves, player)
 

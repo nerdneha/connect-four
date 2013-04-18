@@ -23,6 +23,8 @@ ROWS = 6
 COLUMNS = 7
 TO_WIN = 4
 
+DEPTH_LIMIT = {"medium": 3, "hard": 5}
+
 pygame.font.init()
 
 class Piece:
@@ -368,8 +370,8 @@ def game_loop(screen, clock, mode, level=None):
             if piece.player == 2:
                 if level == "easy":
                     slot, row = get_random_spot(b.grid)
-                if level == "hard":
-                    _, slot = minimax_c4.recur_add_player_depth(b.grid, 2, 5, 4, {})
+                if level == "medium" or level == "hard":
+                    _, slot = minimax_c4.recur_add_player_depth(b.grid, 2, DEPTH_LIMIT[level], 4, {})
                     print slot
                     row = get_row(b.grid, slot, ROWS)
                 if row != None:
