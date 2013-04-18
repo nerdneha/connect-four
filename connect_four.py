@@ -87,12 +87,12 @@ class Board:
                 if winner == 2:
                     win_text = "Computer WINS!! Press 'r' to try again"
                 else:
-                    win_text = "You WIN!! Press 'r' to play again"
+                    win_text = "You BEAT the computer!! Press 'r' to play again"
             else:
                 win_text = "Player %s (%s) WINS!! Press 'r' to play again" % (winner, PLAYERS_COLOR[winner])
             my_font = pygame.font.SysFont("monospace", 20)
             winner_text = my_font.render(win_text, 1, WHITE)
-            self.screen.blit(winner_text, (160, 10))
+            self.screen.blit(winner_text, (50, 10))
 
     def write_board_instructions(self):
         my_font = pygame.font.SysFont("monospace", 15)
@@ -330,6 +330,7 @@ def game_loop(screen, clock, mode, level=None):
                 if event.key == pygame.K_r or mode == "reset":
                 #player wants to reset game
                     winner = None
+                    level = None
                     mode = setup_loop(screen)
                     b = Board(screen) #create a new board
                     red_piece = Piece(screen, 1, (int(width*0.75), height/2)) #add a piece to board
@@ -388,7 +389,6 @@ def game_loop(screen, clock, mode, level=None):
                     slot, row = get_random_spot(b.grid)
                 if level == "medium" or level == "hard":
                     _, slot = minimax_c4.recur_add_player_depth(b.grid, 2, DEPTH_LIMIT[level], 4, {})
-                    print slot
                     row = get_row(b.grid, slot, ROWS)
                 if row != None:
                     b.grid[row][slot] = piece.player
