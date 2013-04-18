@@ -3,6 +3,7 @@ import sys
 import math
 import pprint
 import random
+import minimax_c4
 
 width = 640
 height = 400
@@ -216,9 +217,9 @@ def is_diag_win(grid):
 
 def determine_winner(grid):
     return is_row_win(grid) or is_col_win(grid) or is_diag_win(grid)
+
 def setup_loop(screen):
     screen.fill(BLACK)
-    #surface = pygame.Surface((200,200))
     my_font = pygame.font.SysFont("monospace", 20)
     welcome_msg = my_font.render("Welcome to Connect Four!", 1, WHITE)
 
@@ -226,9 +227,6 @@ def setup_loop(screen):
     b = my_font.render("- 'a' to automate game", 1, WHITE)
     c = my_font.render("- 'c' to play against the computer", 1, WHITE)
     d = my_font.render("- 'p' to play a two-player game", 1, WHITE)
-    #surface.blit(labela, (25,height/2))
-    #surface.blit(labelb, (25,(height/2 + 50)))
-    #screen.blit(surface, (10,10))
     h = 120
     screen.blit(welcome_msg, (160, 60))
     screen.blit(a, (25, h))
@@ -239,7 +237,6 @@ def setup_loop(screen):
     pygame.display.flip()
 
     while True:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
@@ -260,9 +257,46 @@ def setup_loop(screen):
                     sys.exit()
                     return "quit"
 
+def ask_computer_level(screen):
+    screen.fill(BLACK)
+    my_font = pygame.font.SysFont("monospace", 20)
+    welcome_msg = my_font.render("You'll be playing the computer!", 1, WHITE)
+
+    a = my_font.render("Please select the difficulty level:", 1, WHITE)
+    b = my_font.render("1: Easy", 1, WHITE)
+    c = my_font.render("2: Medium", 1, WHITE)
+    d = my_font.render("3: Hard", 1, WHITE)
+    h = 120
+    screen.blit(welcome_msg, (160, 60))
+    screen.blit(a, (25, h))
+    screen.blit(b, (45, h + 25))
+    screen.blit(c, (45, h + 50))
+    screen.blit(d, (45, h + 75))
+
+    pygame.display.flip()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+                return "quit"
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    return "easy"
+
+                if event.key == pygame.K_2:
+                    return "medium"
+
+                if event.key == pygame.K_3:
+                    return "hard"
+
+                if event.key == pygame.K_q or event.key == pygame.K_x:
+                    sys.exit()
+                    return "quit"
 
 
-def game_loop(screen, clock, mode):
+
+def game_loop(screen, clock, mode, level=None):
     b = Board(screen)
     red_piece = Piece(screen, 1, (int(width*0.75), height/2))
     piece = red_piece
@@ -329,8 +363,15 @@ def game_loop(screen, clock, mode):
 
 
         if mode == "computer":
+            if level == None:
+                level = ask_computer_level(screen)
             if piece.player == 2:
-                slot, row = get_random_spot(b.grid)
+                if level == "easy":
+                    slot, row = get_random_spot(b.grid)
+                if level == "hard":
+                    _, slot = minimax_c4.recur_add_player_depth(b.grid, 2, 5, 4, {})
+                    print slot
+                    row = get_row(b.grid, slot, ROWS)
                 if row != None:
                     b.grid[row][slot] = piece.player
                     added_to_grid = True
