@@ -66,6 +66,7 @@ class Board:
         self.box_size = screen_height / (self.rows + 2)
         self.left_disp_offset = self.box_size * 2
         self.top_disp_offset = self.box_size
+        self.computer_mode = False
 
 
     def draw_board(self, winner):
@@ -82,7 +83,13 @@ class Board:
                 self.screen.blit(col_label, (self.left_disp_offset + (self.box_size * col_num) - self.box_size/2, height-40))
             pygame.draw.line(self.screen, WHITE, col_start, col_end)
         if winner != None:
-            win_text = "Player %s (%s) WINS!!" % (winner, PLAYERS_COLOR[winner])
+            if self.computer_mode == True:
+                if winner == 2:
+                    win_text = "Computer WINS!! Press 'r' to try again"
+                else:
+                    win_text = "You WIN!! Press 'r' to play again"
+            else:
+                win_text = "Player %s (%s) WINS!! Press 'r' to play again" % (winner, PLAYERS_COLOR[winner])
             my_font = pygame.font.SysFont("monospace", 20)
             winner_text = my_font.render(win_text, 1, WHITE)
             self.screen.blit(winner_text, (160, 10))
@@ -295,6 +302,8 @@ def ask_computer_level(screen):
                 if event.key == pygame.K_q or event.key == pygame.K_x:
                     sys.exit()
                     return "quit"
+                if event.key == pygame.K_r:
+                    return "reset"
 
 
 
@@ -307,18 +316,20 @@ def game_loop(screen, clock, mode, level=None):
     winner = None
 
     while True:
-        screen.fill(BLACK)
-        b.draw(winner)
-        if piece:
-            piece.draw()
+        if mode != "reset":
+            screen.fill(BLACK)
+            b.draw(winner)
+            if piece:
+                piece.draw()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_x or event.key == pygame.K_q)):
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
+            if event.type == pygame.KEYDOWN or mode == "reset":
+                if event.key == pygame.K_r or mode == "reset":
                 #player wants to reset game
+                    winner = None
                     mode = setup_loop(screen)
                     b = Board(screen) #create a new board
                     red_piece = Piece(screen, 1, (int(width*0.75), height/2)) #add a piece to board
@@ -365,8 +376,13 @@ def game_loop(screen, clock, mode, level=None):
 
 
         if mode == "computer":
+            b.computer_mode = True
             if level == None:
-                level = ask_computer_level(screen)
+                response = ask_computer_level(screen)
+                if response in ["easy", "medium", "hard"]:
+                    level = response
+                else:
+                    mode = response
             if piece.player == 2:
                 if level == "easy":
                     slot, row = get_random_spot(b.grid)
