@@ -10,18 +10,23 @@ The app allows you to play a two-player game or a game against the computer; the
 * Easy: A random column is chosen by the computer
 * Medium/Hard: A column is chosen by the computer based on a minimax algorithm; to conserve time, the algorithm is limited by depth. The depth limit is 3 for medium and 5 for hard. 
 
-The playing screens look like the following:
-General Game: 
+####The playing screens look like the following:
+General Game:
+
 ![General Game](https://github.com/nehalita/connect-four/blob/master/screenshots/board-ex.png?raw=true)
 
 Intro Screen: 
+
 ![Intro Screen](https://github.com/nehalita/connect-four/blob/master/screenshots/intro-mode.png?raw=true)
 
 Computer Level Selection: 
+
 ![Computer Level](https://github.com/nehalita/connect-four/blob/master/screenshots/comp-level.png?raw=true)
 
 Winning Against Computer: 
-![Win on Computer](https://github.com/nehalita/connect-four/blob/master/screenshots/win-against-computer.png?raw=true)
+
+![Win on Computer](https://github.com/nehalita/connect-four/blob/master/screenshots/win-against-comp.png?raw=true)
 
 General Two-Player Game: 
+
 ![General Game](https://github.com/nehalita/connect-four/blob/master/screenshots/connect-four-game.png?raw=true)
