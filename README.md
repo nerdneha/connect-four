@@ -1,7 +1,7 @@
 connect-four
 ============
 
-I made this app using Pygame for fun to explore the visual-meets-code aspect of Pygame and program an AI for my first time. Honestly I just wanted to relive my favorite childhood game and play with it for fun. 
+I made this app using Pygame for fun to explore the visual-meets-code aspect of Pygame and program an AI for my first time. Honestly I just wanted to relive my favorite childhood game and play with it for fun. I used Python 2.7.3. 
 
 ####To start the app:
     python connect-four.py
